@@ -41,10 +41,18 @@ class Answer {
       return true;
     }
 
-    // void add(String message)
-    // {
-    //   return add(message.toCharArray(), message.length());
-    // }
+    bool add(String message)
+    {
+      // Compensate for \0
+      int cpySize = message.length() + 1;
+      if(cpySize > availableLength())
+      {
+        cpySize = availableLength();
+      }
+      message.toCharArray(&buffer[current_length], cpySize+1);
+      current_length += cpySize;
+      return true;
+    }
 
     void clear()
     {

@@ -4,10 +4,13 @@
 #include <SPI.h>
 #include <WiFi101.h>
 #include "Answer.h"
+#include "DuinoREST.h"
 
 using namespace std;
 
 DiscoStrips* disco = NULL;
+DuinoREST* rest = NULL;
+
 #define NUM_STRIPS 1
 #define NUM_LEDS 10
 
@@ -78,6 +81,12 @@ void printIndex(WiFiClient &client) {
   client.println();
 }
 
+
+void discoFunc(String line, Answer* answer)
+{
+  disco->rest_parsing(line, answer);
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -86,6 +95,8 @@ void setup()
   AddLeds<NUM_STRIPS>::generate();
 
   disco = new DiscoStrips(ledArray);
+  rest = new DuinoREST;
+
   // check for the presence of the shield:
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println("WiFi shield not present");
@@ -115,6 +126,7 @@ void setup()
   // you're connected now, so print out the status
   printWiFiStatus();
 
+  rest->addHandler("disco", discoFunc);
 }
 
 void loop()
@@ -149,49 +161,10 @@ void loop()
   WiFiClient client = server.available();   // listen for incoming clients
 
   if (client) {                             // if you get a client,
-    Serial.println("new client");           // print a message out the serial port
-    String currentLine = "";                // make a String to hold incoming data from the client
-    while (client.connected()) {            // loop while the client's connected
-      if (client.available()) {             // if there's bytes to read from the client,
-        char c = client.read();             // read a byte, then
-        if (c == '\n')                     // if the byte is a newline character
-        {
-          Serial.println(currentLine);
-          String response = disco->rest_parsing(currentLine);
-          if(response.length() > 0)
-          {
-            client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/text");
-            client.println();
-            client.println(response);
-          }
-
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
-          if (currentLine.length() == 0)
-          {
-            // printIndex(client);
-            // break out of the while loop:
-            break;
-          }
-          else {      // if you got a newline, then clear currentLine:
-            currentLine = "";
-          }
-        }
-        else if (c != '\r')
-        {    // if you got anything else but a carriage return character,
-          currentLine += c;      // add it to the end of the currentLine
-        }
-        else
-        {
-          // Serial.println(currentLine);
-          // disco->rest_parsing(currentLine);
-        }
-      }
-    }
+    rest->handle(client);
     // close the connection:
+    delay(1);
     client.stop();
-    Serial.println("client disconnected");
   }
 
   disco->tick();
