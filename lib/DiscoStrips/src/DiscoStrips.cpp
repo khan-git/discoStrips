@@ -60,34 +60,79 @@ void DiscoStrips::tick()
 * disco/
 *   brightness/<num>
 */
-String DiscoStrips::rest_parsing(String line)
+void DiscoStrips::rest_parsing(String line, Answer* answer)
 {
   String work_line = line.substring(line.indexOf(' ')+1);
 
   if(!line.startsWith("PUT") && !line.startsWith("GET"))
   {
-    return "";
+    return;
   }
 
   // Verify it's for Disco
   if(work_line.startsWith(rest_prefix))
   {
-    work_line = work_line.substring(rest_prefix.length());
+    Serial.println(work_line);
+    work_line.replace(rest_prefix, "");
+    Serial.println(work_line);
     if(work_line.startsWith("brightness"))
     {
-      work_line = work_line.substring(work_line.indexOf('/')+1);
-      if(line.startsWith("PUT"))
-      {
-        brightness = work_line.toInt();
-        Serial.print("--Brightness PUT: ");
-        Serial.println(brightness);
-        return "";
-      }
-      else if(line.startsWith("GET"))
-      {
-        Serial.println("--Sent brightness");
-        return String(brightness);
-      }
+      Serial.println(work_line);
+      handleBrightness(line, work_line, answer);
     }
+    else if(work_line.startsWith("tempo"))
+    {
+      Serial.println(work_line);
+      handleTempo(line, work_line, answer);
+    }
+    else{
+      answer->add("{\"cmds\":[\"brightness\",\"tempo\"]}");
+    }
+  }
+}
+
+void DiscoStrips::handleBrightness(String line, String work_line, Answer *answer)
+{
+  work_line = work_line.substring(work_line.indexOf('/')+1);
+  if(line.startsWith("PUT"))
+  {
+    String msg = "{\"set\":{\"cmd\":\"brightness\", \"value\":";
+    brightness = work_line.toInt();
+    msg += brightness;
+    msg += "}}";
+    answer->add(msg);
+    return;
+  }
+  else if(line.startsWith("GET"))
+  {
+    Serial.println("--Sent brightness");
+    String msg = "{\"brightness\":";
+    msg += brightness;
+    msg += "}";
+    answer->add(msg);
+    return;
+  }
+}
+
+void DiscoStrips::handleTempo(String line, String work_line, Answer *answer)
+{
+  work_line = work_line.substring(work_line.indexOf('/')+1);
+  if(line.startsWith("PUT"))
+  {
+    String msg = "{\"set\":{\"cmd\":\"tempo\", \"value\":";
+    tick_time = work_line.toInt();
+    msg += tick_time;
+    msg += "}}";
+    answer->add(msg);
+    return;
+  }
+  else if(line.startsWith("GET"))
+  {
+    Serial.println("--Sent tempo");
+    String msg = "{\"tempo\":";
+    msg += tick_time;
+    msg += "}";
+    answer->add(msg);
+    return;
   }
 }

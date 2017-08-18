@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "SimpleVector.h"
 #include "FastLED.h"
+#include "Answer.h"
 
 using namespace std;
 
@@ -17,7 +18,7 @@ class DiscoStrips {
     int getBrightness() {return brightness;}
     void set_brightness(int lvl) { brightness = lvl;}
 
-    String rest_parsing(String line);
+    void rest_parsing(String line, Answer* answer);
 
     static const int NUM_COLORS = 5;
     static const int NUM_PATTERNS = 6;
@@ -30,6 +31,9 @@ class DiscoStrips {
     SimpleVector<CRGB>* ledArray;
     int brightness;
     String rest_prefix;
+
+    void handleBrightness(String line, String work_line, Answer* answer);
+    void handleTempo(String line, String work_line, Answer* answer);
 
     CRGB::HTMLColorCode discoPallets[NUM_COLORS] {
       CRGB::Blue,
