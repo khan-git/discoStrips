@@ -12,7 +12,7 @@ Available modes for now are:
 * disco
 
 ## REST API
-
+'''
 mode
   /off
   /on
@@ -24,6 +24,5 @@ colour
 disco
   /tempo/<milli seconds>
   /brightness/<value 10-255>
-
-
+'''
 
