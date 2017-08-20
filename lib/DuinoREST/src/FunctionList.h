@@ -55,43 +55,59 @@ public:
     }
   }
 
-void call(FuncItem* item, String string, Answer* answer)
-{
-  item->function(string, answer);
-}
-
-void callAll(String string, Answer* answer)
-{
-  struct FuncItem* walker = functionList;
-  while(walker != NULL)
+  void call(FuncItem* item, String string, Answer* answer)
   {
-    Serial.print("Calling ");
-    Serial.println(walker->name);
-    walker->function(string, answer);
-    walker = walker->next;
+    item->function(string, answer);
   }
-}
 
-String getNames()
-{
-  String names = "{\"names\":[";
-  struct FuncItem* walker = functionList;
-  while(walker != NULL)
+  void call(char* name, String string, Answer* answer)
   {
-    names += "\"";
-    names += walker->name;
-    names += "\"";
-    if(walker->next != NULL)
+    struct FuncItem* walker = functionList;
+    while(walker != NULL)
     {
-      names += ",";
+      if(strcmp(walker->name, name) == 0)
+      {
+        Serial.print("Calling ");
+        Serial.println(walker->name);
+        walker->function(string, answer);
+        break;
+      }
+      walker = walker->next;
     }
-    walker = walker->next;
   }
-  names += "]}";
-  return names;
-}
 
-private:
-  struct FuncItem* functionList = NULL;
+  void callAll(String string, Answer* answer)
+  {
+    struct FuncItem* walker = functionList;
+    while(walker != NULL)
+    {
+      Serial.print("Calling ");
+      Serial.println(walker->name);
+      walker->function(string, answer);
+      walker = walker->next;
+    }
+  }
+
+  String getNames()
+  {
+    String names = "{\"functions\":[";
+    struct FuncItem* walker = functionList;
+    while(walker != NULL)
+    {
+      names += "\"";
+      names += walker->name;
+      names += "\"";
+      if(walker->next != NULL)
+      {
+        names += ",";
+      }
+      walker = walker->next;
+    }
+    names += "]}";
+    return names;
+  }
+
+  private:
+    struct FuncItem* functionList = NULL;
 };
 #endif

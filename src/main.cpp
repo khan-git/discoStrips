@@ -5,6 +5,7 @@
 #include <WiFi101.h>
 #include "Answer.h"
 #include "DuinoREST.h"
+#include "Modes.h"
 
 using namespace std;
 
@@ -15,6 +16,9 @@ DuinoREST* rest = NULL;
 #define NUM_LEDS 10
 
 SimpleVector<CRGB>* ledArray;
+int currentMode = 0;
+int brightness = 25;
+int colour = 4;
 
 char ssid[] = "Resistance Is Futile 2"; // created AP name
 char pass[] = "liss#dfe1AWdfew";      // AP password (needed only for WEP, must be exactly 10 or 26 characters in length)
@@ -53,43 +57,89 @@ void printWiFiStatus() {
 
 }
 
-void printIndex(WiFiClient &client) {
-  // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-  // and a content-type so the client knows what's coming, then a blank line:
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-type:text/html");
-  client.println();
-
-  // the content of the HTTP response follows the header:
-  client.print("<html>\n");
-  client.print("<head><script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script></head>");
-  client.print("<body>\n");
-  client.print("<script type=\"text/javascript\">"
-  "function postBrightness(){"
-    "console.info('Hello');"
-    "$.post('/brightness', {'values':'43'});"
-  "}"
-  "</script>");
-  client.print("<form action=\"brightness\" method=\"post\">\n");
-  client.print("<input id=\"brightness\" type=\"range\" value=\"45\" onchange=\"postBrightness()\">\n");
-  client.print("</form>\n");
-  // client.print(bluePushed);
-  client.print("</body></html>");
-  // client.print("Click <a href=\"/L\">here</a> turn the LED off<br>");
-
-  // The HTTP response ends with another blank line:
-  client.println();
-}
-
-
 void discoFunc(String line, Answer* answer)
 {
   disco->rest_parsing(line, answer);
 }
 
+void brightnessFunc(String line, Answer* answer)
+{
+  if(line.startsWith("PUT /brightness/"))
+  {
+    brightness = line.substring(16).toInt();
+  }
+  answer->add("{\"brightness\":");
+  answer->add(String(brightness));
+  answer->add("}");
+}
+
+String colours[] = {"red", "green", "yellow", "blue", "white"};
+CRGB crgbs[] = {CRGB::Red, CRGB::DarkGreen, CRGB::Yellow, CRGB::Blue, CRGB::White};
+
+void colourFunc(String line, Answer* answer)
+{
+  if(line.startsWith("PUT /colour/"))
+  {
+    String colourReq = line.substring(12);
+    for(int i=0; i < 5; i++)
+    {
+      if(colourReq.startsWith(colours[i]))
+      {
+        colour = i;
+        break;
+      }
+    }
+  }
+  answer->add("{\"colour\":");
+  answer->add(colours[colour]);
+  answer->add(",\"options\":[");
+  for(int i=0; i < 5; i++)
+  {
+    answer->add("\"");
+    answer->add(colours[i]);
+    answer->add("\"");
+    if(i < 4)
+    {
+      answer->add(", ");
+    }
+  }
+  answer->add("]}");
+}
+
+void modesFunc(String line, Answer* answer)
+{
+  if(line.startsWith("GET /mode"))
+  {
+    answer->add("{\"modes\":[\"off\", \"on\", \"night\", \"fisco\"]}");
+  }
+  else if(line.startsWith("PUT /mode/on"))
+  {
+    currentMode = 1;
+    answer->add("{\"mode\":\"on\"}");
+  }
+  else if(line.startsWith("PUT /mode/night"))
+  {
+    currentMode = 2;
+    answer->add("{\"mode\":\"Night\"}");
+  }
+  else if(line.startsWith("PUT /mode/disco"))
+  {
+    currentMode = 3;
+    answer->add("{\"mode\":\"disco\"}");
+  }
+  else
+  {
+    currentMode = 0;
+    answer->add("{\"mode\":\"off\"}");
+  }
+}
+
 void setup()
 {
   Serial.begin(115200);
+  delay(1000);
+  Serial.println("Setup");
+  delay(1000);
   Serial.println("Setup");
   ledArray = new SimpleVector<CRGB>(NUM_STRIPS, NUM_LEDS);
   AddLeds<NUM_STRIPS>::generate();
@@ -127,6 +177,33 @@ void setup()
   printWiFiStatus();
 
   rest->addHandler("disco", discoFunc);
+  rest->addHandler("mode", modesFunc);
+  rest->addHandler("brightness", brightnessFunc);
+  rest->addHandler("colour", colourFunc);
+}
+
+void allLedsOff()
+{
+  for(int i=0; i < ledArray->rows(); i++)
+  {
+    for(int j=0; j < ledArray->cols(); j++)
+    {
+      *ledArray->get(i, j) = CRGB::Black;
+    }
+  }
+
+}
+
+void allLedsOn()
+{
+  for(int i=0; i < ledArray->rows(); i++)
+  {
+    for(int j=0; j < ledArray->cols(); j++)
+    {
+      *ledArray->get(i, j) = crgbs[colour];
+      *ledArray->get(i, j) %= brightness;
+    }
+  }
 }
 
 void loop()
@@ -165,6 +242,28 @@ void loop()
     // close the connection:
     delay(1);
     client.stop();
+  }
+
+  switch(currentMode)
+  {
+    case 3:
+      disco->enable();
+      break;
+
+    case 2:
+      disco->disable();
+      break;
+
+    case 1:
+      disco->disable();
+      allLedsOn();
+      break;
+
+    case 0:
+    default:
+      disco->disable();
+      allLedsOff();
+          break;
   }
 
   disco->tick();

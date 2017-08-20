@@ -1,7 +1,17 @@
 #ifndef SIMPLE_VECTOR_H
+#define SIMPLE_VECTOR_H
 
 template <class T> class SimpleVector {
   public:
+    SimpleVector(int row):row(row), col(1)
+    {
+      sVector = new T*[row];
+      for(int i= 0; i<row; i++)
+      {
+        sVector[i] = new T[col];
+      }
+    }
+
     SimpleVector(int row, int col):row(row), col(col)
     {
       sVector = new T*[row];

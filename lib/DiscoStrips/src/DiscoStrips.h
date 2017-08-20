@@ -19,6 +19,8 @@ class DiscoStrips {
     void set_brightness(int lvl) { brightness = lvl;}
 
     void rest_parsing(String line, Answer* answer);
+    void disable();
+    void enable();
 
     static const int NUM_COLORS = 5;
     static const int NUM_PATTERNS = 6;
@@ -34,6 +36,7 @@ class DiscoStrips {
 
     void handleBrightness(String line, String work_line, Answer* answer);
     void handleTempo(String line, String work_line, Answer* answer);
+    bool enabled;
 
     CRGB::HTMLColorCode discoPallets[NUM_COLORS] {
       CRGB::Blue,

@@ -6,10 +6,11 @@ DiscoStrips::DiscoStrips(SimpleVector<CRGB>* ledArray)
   current_pattern = 0;
   last_tick = millis();
   brightness = 75;
-  rest_prefix = String("/disco/");
+  rest_prefix = String("/disco");
   this->ledArray = ledArray;
   discoPatterns = new SimpleVector<char>(ledArray->rows(), NUM_PATTERNS);
   create_pattern();
+  enabled = false;
 }
 
 DiscoStrips::~DiscoStrips()
@@ -45,13 +46,26 @@ void DiscoStrips::shift_pattern()
   }
 }
 
+void DiscoStrips::enable()
+{
+  enabled = true;
+}
+
+void DiscoStrips::disable()
+{
+  enabled = false;
+}
+
 void DiscoStrips::tick()
 {
   unsigned long curr_tick = millis();
   if((curr_tick - last_tick) > tick_time)
   {
     last_tick = curr_tick;
-    shift_pattern();
+    if(enabled)
+    {
+      shift_pattern();
+    }
   }
 }
 
@@ -75,18 +89,21 @@ void DiscoStrips::rest_parsing(String line, Answer* answer)
     Serial.println(work_line);
     work_line.replace(rest_prefix, "");
     Serial.println(work_line);
-    if(work_line.startsWith("brightness"))
+    if(work_line.startsWith("/brightness"))
     {
       Serial.println(work_line);
       handleBrightness(line, work_line, answer);
     }
-    else if(work_line.startsWith("tempo"))
+    else if(work_line.startsWith("/tempo"))
     {
       Serial.println(work_line);
       handleTempo(line, work_line, answer);
     }
     else{
-      answer->add("{\"cmds\":[\"brightness\",\"tempo\"]}");
+      answer->add("{\"enabled\":");
+      answer->add(enabled?"true":"false");
+      answer->add(",\"cmds\":[\"brightness\",\"tempo\"]}");
+      Serial.println(answer->getBuffer());
     }
   }
 }
@@ -117,9 +134,12 @@ void DiscoStrips::handleBrightness(String line, String work_line, Answer *answer
 void DiscoStrips::handleTempo(String line, String work_line, Answer *answer)
 {
   work_line = work_line.substring(work_line.indexOf('/')+1);
+  work_line = work_line.substring(work_line.indexOf('/')+1);
   if(line.startsWith("PUT"))
   {
     String msg = "{\"set\":{\"cmd\":\"tempo\", \"value\":";
+    Serial.print("---new tempo: ");
+    Serial.println(work_line);
     tick_time = work_line.toInt();
     msg += tick_time;
     msg += "}}";

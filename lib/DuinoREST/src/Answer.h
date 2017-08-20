@@ -49,8 +49,8 @@ class Answer {
       {
         cpySize = availableLength();
       }
-      message.toCharArray(&buffer[current_length], cpySize+1);
-      current_length += cpySize;
+      message.toCharArray(&buffer[current_length], cpySize, 0);
+      current_length += cpySize-1; // Minus \0
       return true;
     }
 
