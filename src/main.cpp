@@ -20,9 +20,9 @@ int currentMode = 0;
 int brightness = 25;
 int colour = 4;
 
-char ssid[] = "Resistance Is Futile 2"; // created AP name
-char pass[] = "liss#dfe1AWdfew";      // AP password (needed only for WEP, must be exactly 10 or 26 characters in length)
-int keyIndex = 0;                // your network key Index number (needed only for WEP)
+char ssid[] = "<AP name>";
+char pass[] = "<password>";
+int keyIndex = 0;
 
 int status = WL_IDLE_STATUS;
 WiFiServer server(80);
